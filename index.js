@@ -24,12 +24,13 @@ app.listen(port, () => console.log(`Web server live on port ${port}`));
 
 // 2. THE BOT CONFIG
 const botArgs = {
-  host: 'PixelCraft-kgp9.aternos.me', // Your permanent Aternos IP
-  port: 30780,                        // Your Aternos Port
+  host: 'lamprey.aternos.host', // Updated to your DynIP host
+  port: 30780,                  // Updated to your DynIP port
   username: 'PixelCraftBot',
   auth: 'offline',
-  checkTimeoutInterval: 60000         // Gives Aternos more time to respond
+  checkTimeoutInterval: 60000   // Gives more time for the handshake
 };
+
 
 function startBot() {
   console.log(`[${new Date().toLocaleTimeString()}] Attempting to join ${botArgs.host}...`);
@@ -60,6 +61,7 @@ function startBot() {
 }
 
 startBot();
+
 
 
 
