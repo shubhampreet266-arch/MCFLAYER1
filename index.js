@@ -8,7 +8,7 @@ http.createServer((req, res) => {
 }).listen(process.env.PORT || 3000);
 
 const botArgs = {
-  host: 'PixelCraft-kgp9.aternos.me'  //Replace with your Aternos IP
+  host: 'PixelCraft-kgp9.aternos.me',  //Replace with your Aternos IP
   port: 30780,             // Change if your Aternos port is different
   username: 'MINEFLAYERBOT',
   version: '1.21.11',      // Updated for 1.21.11
@@ -32,3 +32,4 @@ function createBot() {
 }
 
 createBot()
+
