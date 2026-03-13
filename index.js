@@ -10,7 +10,7 @@ http.createServer((req, res) => {
 });
 
 const botArgs = {
-  host: 'PixelCraft-kgp9.aternos.me', 
+  host: 'lamprey.aternos.host', 
   port: 30780,             
   username: 'MINEFLAYERBOT',
   auth: 'offline'
@@ -42,6 +42,7 @@ function createBot() {
 
 // Start the bot
 createBot();
+
 
 
 
