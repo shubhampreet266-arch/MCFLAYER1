@@ -24,12 +24,15 @@ app.listen(port, () => console.log(`Web server live on port ${port}`));
 
 // 2. THE BOT CONFIG
 const botArgs = {
-  host: 'lamprey.aternos.host', // Updated to your DynIP host
-  port: 30780,                  // Updated to your DynIP port
+  host: 'lamprey.aternos.host', 
+  port: 30780,                  
   username: 'PixelCraftBot',
   auth: 'offline',
-  checkTimeoutInterval: 60000   // Gives more time for the handshake
+  version: '1.21.1',          // Hardcode the version (auto-detect can hang)
+  connectTimeout: 30000,      // Kill the attempt if no response in 30s
+  hideErrors: false           // Show us exactly what's happening
 };
+
 
 
 function startBot() {
@@ -61,6 +64,7 @@ function startBot() {
 }
 
 startBot();
+
 
 
 
