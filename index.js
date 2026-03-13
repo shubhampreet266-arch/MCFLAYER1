@@ -28,9 +28,10 @@ const botArgs = {
   port: 30780,                  
   username: 'PixelCraftBot',
   auth: 'offline',
-  version: '1.21.1',      // Hardcode the version
-  skipValidation: true,   // IMPORTANT: Skips the "ping" check that is timing out
-  connectTimeout: 30000,  // Stops it from hanging for minutes
+  version: '1.21.1',
+  skipValidation: true,
+  connectTimeout: 60000,       // Increased to 60s to handle Render's slow network
+  checkTimeoutInterval: 90000, // Increased to 90s to prevent 'keepAliveError'
 };
 
 
@@ -65,6 +66,7 @@ function startBot() {
 }
 
 startBot();
+
 
 
 
