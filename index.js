@@ -1,36 +1,47 @@
-const mineflayer = require('mineflayer')
-const http = require('http')
+const mineflayer = require('mineflayer');
+const http = require('http');
 
-// Create a web server so Render doesn't shut down the project
+// Web server for Render
 http.createServer((req, res) => {
   res.write("Bot is alive!");
   res.end();
-}).listen(process.env.PORT || 3000);
+}).listen(process.env.PORT || 3000, () => {
+  console.log("Web server is running on port", process.env.PORT || 3000);
+});
 
 const botArgs = {
-  host: 'PixelCraft-kgp9.aternos.me',  //Replace with your Aternos IP
-  port: 30780,             // Change if your Aternos port is different
+  host: 'PixelCraft-kgp9.aternos.me', 
+  port: 30780,             
   username: 'MINEFLAYERBOT',
-  version: false,      // Updated for 1.21.11
-  auth: 'offline'          // For cracked servers
-}
+  auth: 'offline'
+};
 
 function createBot() {
-  const bot = mineflayer.createBot(botArgs)
+  console.log(`[${new Date().toLocaleTimeString()}] Attempting to join ${botArgs.host}:${botArgs.port}...`);
+  
+  const bot = mineflayer.createBot(botArgs);
 
-  bot.on('spawn', () => {
-    console.log('Bot joined!')
-    bot.chat('/gamemode spectator') // Works because you OP'd the bot
-  })
+  bot.once('spawn', () => {
+    console.log('✅ Bot successfully joined the server!');
+    bot.chat('/gamemode spectator');
+  });
 
-  bot.on('error', (err) => console.log('Error:', err.message))
+  bot.on('error', (err) => {
+    console.log('❌ Connection Error:', err.message);
+  });
+
+  bot.on('kicked', (reason) => {
+    console.log('⚠️ Kicked from server:', reason);
+  });
   
   bot.once('end', (reason) => {
-    console.log(`Disconnected: ${reason}. Rejoining in 20s...`)
-    setTimeout(createBot, 20000)
-  })
+    console.log(`🔌 Disconnected: ${reason}. Retrying in 20s...`);
+    setTimeout(createBot, 20000);
+  });
 }
 
-createBot()
+// Start the bot
+createBot();
+
 
 
