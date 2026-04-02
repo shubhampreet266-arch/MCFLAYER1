@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ===== WEB SERVER (Keep Alive) =====
+// ===== WEB SERVER =====
 let botStatus = { connected: false, uptime: 0, attempts: 0, lastError: 'None' };
 const startTime = Date.now();
 
@@ -32,9 +32,9 @@ const botArgs = {
 };
 
 let afkInterval = null;
-let chatInterval = null;
+let chatTimeout = null;
 
-// ===== TECHNOBLADE QUOTES =====
+// ===== QUOTES =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
@@ -45,6 +45,28 @@ const quotes = [
   "Not even close.",
   "The Blade."
 ];
+
+// ===== RANDOM CHAT LOOP =====
+function startRandomChat(bot) {
+  if (chatTimeout) {
+    clearTimeout(chatTimeout);
+    chatTimeout = null;
+  }
+
+  function sendMessage() {
+    if (!botStatus.connected) return;
+
+    const msg = quotes[Math.floor(Math.random() * quotes.length)];
+    bot.chat(msg);
+
+    // Random delay between 30s and 120s
+    const delay = Math.floor(Math.random() * (120000 - 30000)) + 30000;
+
+    chatTimeout = setTimeout(sendMessage, delay);
+  }
+
+  sendMessage();
+}
 
 // ===== START BOT =====
 function startBot() {
@@ -67,30 +89,8 @@ function startBot() {
       setTimeout(() => bot.setControlState('jump', false), 500);
     }, 30000);
 
-    // ===== RANDOM CHAT =====
-    if (chatInterval) clearInterval(chatInterval);
-    chatInterval = setInterval(() => {
-      const msg = quotes[Math.floor(Math.random() * quotes.length)];
-      bot.chat(msg);
-    }, 120000); // every 2 min
-  });
-
-  // ===== AUTO KILL ATTACKER =====
-  bot.on('entityHurt', (entity) => {
-    if (!bot.entity) return;
-
-    // if bot itself got hurt
-    if (entity.id === bot.entity.id) {
-      const attacker = bot.entity?.metadata?.[6]; // fallback (not always reliable)
-      
-      // safer way: attack nearest player
-      const target = bot.nearestEntity(e => e.type === 'player' && e.username !== bot.username);
-
-      if (target) {
-        console.log(`⚔️ Attacked by ${target.username}`);
-        bot.chat(`/kill ${target.username}`);
-      }
-    }
+    // ===== RANDOM CHAT START =====
+    startRandomChat(bot);
   });
 
   bot.on('error', (err) => {
@@ -102,9 +102,9 @@ function startBot() {
     botStatus.connected = false;
     botStatus.attempts++;
     console.log(`🔌 Disconnected: ${reason}`);
-    
+
     if (afkInterval) clearInterval(afkInterval);
-    if (chatInterval) clearInterval(chatInterval);
+    if (chatTimeout) clearTimeout(chatTimeout);
 
     setTimeout(startBot, 30000);
   });
