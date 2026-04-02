@@ -20,24 +20,42 @@ const botArgs = {
 let chatRunning = false;
 let executionRunning = false;
 
-// ===== QUOTES =====
+// ===== BIG QUOTE POOL =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
   "YOU MORON!",
   "Do not reveal your strategies in a YouTube video, you fool!",
+  "I win these.",
   "Not even close.",
-  "The Blade."
+  "The Blade.",
+  "You underestimate me.",
+  "You should have stayed quiet.",
+  "This was your mistake.",
+  "You cannot win.",
+  "Skill issue.",
+  "I have already calculated this.",
+  "This outcome was inevitable.",
+  "You thought you stood a chance?",
+  "This is just another fight.",
+  "You are already defeated.",
+  "I have seen this ending.",
+  "Your defeat was guaranteed."
 ];
 
+// ===== ATTACK LINES =====
 const attackLines = [
   "YOU DARE STRIKE ME, %target%?",
   "You chose death, %target%.",
-  "You made a mistake, %target%."
+  "You made a mistake, %target%.",
+  "Your fate was sealed, %target%.",
+  "You should have run, %target%.",
+  "Technoblade never dies.",
+  "Blood for the Blood God!"
 ];
 
-// ===== RANDOM CHAT (FIXED) =====
+// ===== RANDOM CHAT (NO SPAM) =====
 function startChat(bot) {
   if (chatRunning) return;
   chatRunning = true;
@@ -55,24 +73,26 @@ function startChat(bot) {
   loop();
 }
 
-// ===== SAFE ATTACKER DETECTION =====
+// ===== ATTACKER DETECTION (MELEE ONLY = STABLE) =====
 function getAttacker(bot) {
   if (!bot.entity) return null;
 
   return bot.nearestEntity(e =>
     e &&
-    e.id !== bot.entity.id &&
+    e.type === 'player' &&
+    e.username &&
+    e.username !== bot.username &&
     e.position &&
     e.position.distanceTo(bot.entity.position) < 4
   );
 }
 
-// ===== EXECUTION =====
+// ===== EXECUTION SYSTEM =====
 function execute(bot, target) {
   if (!target || executionRunning) return;
   executionRunning = true;
 
-  const name = target.username || target.name || "something";
+  const name = target.username;
 
   const line = attackLines[
     Math.floor(Math.random() * attackLines.length)
@@ -93,11 +113,7 @@ function execute(bot, target) {
       clearInterval(interval);
 
       try {
-        if (target.username) {
-          bot.chat(`/kill ${target.username}`);
-        } else if (target.name) {
-          bot.chat(`/kill @e[type=${target.name},distance=..5,limit=1]`);
-        }
+        bot.chat(`/kill ${name}`);
       } catch (e) {
         console.log("Kill error:", e.message);
       }
