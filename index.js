@@ -1,9 +1,9 @@
 const mineflayer = require('mineflayer');
 const express = require('express');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ===== WEB SERVER =====
 let connected = false;
 
 app.get('/', (req, res) => {
@@ -24,7 +24,7 @@ const botArgs = {
 let chatRunning = false;
 let executionRunning = false;
 
-// ===== SAFE QUOTES (NO ILLEGAL CHARACTERS) =====
+// ===== QUOTES =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
@@ -32,21 +32,17 @@ const quotes = [
   "YOU MORON!",
   "Not even close.",
   "The Blade.",
-  "You underestimate me.",
-  "Your fate is sealed.",
-  "This outcome was inevitable.",
   "Skill issue."
 ];
 
-// ===== ATTACK LINES =====
 const attackLines = [
   "YOU DARE STRIKE ME, %target%?",
   "You chose death, %target%.",
-  "You made a mistake, %target%.",
-  "Your fate is sealed, %target%."
+  "Your fate is sealed, %target%.",
+  "Bad decision, %target%."
 ];
 
-// ===== CHAT LOOP (NO SPAM STACKING) =====
+// ===== CHAT =====
 function startChat(bot) {
   if (chatRunning) return;
   chatRunning = true;
@@ -54,47 +50,44 @@ function startChat(bot) {
   function loop() {
     if (!connected) return;
 
-    const msg = quotes[Math.floor(Math.random() * quotes.length)];
-    bot.chat(msg);
+    bot.chat(quotes[Math.floor(Math.random() * quotes.length)]);
 
-    const delay = Math.floor(Math.random() * 90000) + 30000;
-    setTimeout(loop, delay);
+    setTimeout(loop, Math.random() * 90000 + 30000);
   }
 
   loop();
 }
 
-// ===== ATTACKER DETECTION =====
+// ===== FIND ATTACKER =====
 function getAttacker(bot) {
   if (!bot.entity) return null;
 
   return bot.nearestEntity(e =>
     e &&
     e.type === 'player' &&
-    e.username &&
     e.username !== bot.username &&
+    bot.entity.position &&
     e.position &&
-    e.position.distanceTo(bot.entity.position) < 4
+    e.position.distanceTo(bot.entity.position) < 5
   );
 }
 
-// ===== EXECUTION SYSTEM (SAFE) =====
+// ===== EXECUTION =====
 function execute(bot, target) {
   if (!target || executionRunning) return;
+
   executionRunning = true;
 
   const name = target.username;
-
-  const line =
-    attackLines[Math.floor(Math.random() * attackLines.length)]
-      .replace("%target%", name);
+  const line = attackLines[Math.floor(Math.random() * attackLines.length)]
+    .replace("%target%", name);
 
   bot.chat(line);
 
   let time = 10;
 
   const interval = setInterval(() => {
-    if (!connected) {
+    if (!connected || !bot.entity) {
       clearInterval(interval);
       executionRunning = false;
       return;
@@ -103,56 +96,47 @@ function execute(bot, target) {
     if (time <= 0) {
       clearInterval(interval);
 
-      try {
-        bot.chat(`/execute as ${name} run kill @s`);
-      } catch (e) {
-        console.log("Kill error:", e.message);
-      }
+      // SAFE fallback kill (works on most servers ONLY if OP)
+      bot.chat(`/kill ${name}`);
 
       executionRunning = false;
       return;
     }
 
-    bot.chat(name + " dies in " + time + "...");
+    bot.chat(`${name} dies in ${time}...`);
     time--;
   }, 1000);
+
+  // safety unlock (prevents permanent lock)
+  setTimeout(() => executionRunning = false, 20000);
 }
 
-// ===== START BOT =====
+// ===== BOT =====
 function startBot() {
   const bot = mineflayer.createBot(botArgs);
+
+  let jumpLoop;
 
   bot.on('spawn', () => {
     connected = true;
 
-    // IMPORTANT: NO /skin COMMAND (FIXED YOUR ISSUE)
-
-    // SAFE chat loop
     startChat(bot);
 
-    // simple anti-AFK jump
-    setInterval(() => {
+    // FIXED jump loop (no stacking)
+    if (jumpLoop) clearInterval(jumpLoop);
+
+    jumpLoop = setInterval(() => {
       if (!bot.entity) return;
       bot.setControlState('jump', true);
-      setTimeout(() => bot.setControlState('jump', false), 300);
+      setTimeout(() => bot.setControlState('jump', false), 200);
     }, 30000);
   });
 
   bot.on('entityHurt', (entity) => {
     if (!bot.entity || entity.id !== bot.entity.id) return;
 
-    try {
-      const attacker = getAttacker(bot);
-      if (!attacker) return;
-
-      execute(bot, attacker);
-    } catch (e) {
-      console.log("Attack error:", e.message);
-    }
-  });
-
-  bot.on('kicked', (reason) => {
-    console.log("KICKED:", reason);
+    const attacker = getAttacker(bot);
+    if (attacker) execute(bot, attacker);
   });
 
   bot.on('end', () => {
