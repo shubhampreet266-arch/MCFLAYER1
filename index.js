@@ -33,8 +33,7 @@ const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
-  "YOU MORON!",
-  "Do not reveal your strategies in a YouTube video, you fool!",
+  "Do not reveal your strategies in a YouTube video, you fool! YOU MORON!",
   "I win these.",
   "Not even close.",
   "The Blade.",
@@ -62,8 +61,20 @@ const attackLines = [
   "Your fate was sealed, %player%.",
   "Technoblade never dies.",
   "Blood for the Blood God!"
+  "Your defeat was predicted.",
+  "You cannot win.",
+  "This was over before it began.",
+  "This is just another Tuesday.",
+  "Skill issue.",
+  "You thought you stood a chance?",
+  "You should have stayed home.",
+  "I am inevitable.",
+  "You made a mistake.",
+  "Not even close"
+  "Technoblade never dies"
+  "GG"
+  
 ];
-
 // ===== RANDOM CHAT =====
 function startRandomChat(bot) {
   if (chatTimeout) clearTimeout(chatTimeout);
