@@ -26,20 +26,29 @@ let executionRunning = false;
 
 // ===== QUOTES =====
 const quotes = [
-  "Technoblade never dies.",
+ "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
-  "YOU MORON!",
+  "Never reveal your strategies in a youtube video, you fool! YOU MORON!",
   "Not even close.",
   "The Blade.",
+  "You underestimate me.",
+  "Your fate is sealed.",
+  "This outcome was inevitable.",
   "Skill issue."
 ];
 
+// ===== ATTACK LINES =====
 const attackLines = [
   "YOU DARE STRIKE ME, %target%?",
   "You chose death, %target%.",
+  "You made a mistake, %target%.",
   "Your fate is sealed, %target%.",
-  "Bad decision, %target%."
+  "You underestimate me.",
+  "Your fate is sealed.",
+  "This outcome was inevitable.",
+  "Skill issue.",
+  "Not even close.",
 ];
 
 // ===== CHAT =====
