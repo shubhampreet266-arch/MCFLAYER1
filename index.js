@@ -27,29 +27,20 @@ let afkInterval = null;
 let chatTimeout = null;
 let lastMessageTime = 0;
 let lastAttackTime = 0;
+let activeExecution = false;
 
-// ===== QUOTES (BIG LIST) =====
+// ===== QUOTES =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
-  "Do not reveal your strategies in a YouTube video, you fool! YOU MORON!",
+  "YOU MORON!",
+  "Do not reveal your strategies in a YouTube video, you fool!",
   "I win these.",
   "Not even close.",
   "The Blade.",
   "You underestimate me.",
-  "I have calculated your defeat.",
-  "This is just another Tuesday.",
-  "Skill issue.",
-  "You thought you stood a chance?",
-  "You should have stayed home.",
-  "I am inevitable.",
-  "You made a mistake.",
-  "This is where you lose.",
-  "I have seen this outcome already.",
-  "Your defeat was predicted.",
-  "You cannot win.",
-  "This was over before it began."
+  "This is where you lose."
 ];
 
 // ===== ATTACK LINES =====
@@ -57,24 +48,11 @@ const attackLines = [
   "YOU DARE STRIKE ME, %player%?",
   "You have made a grave mistake, %player%.",
   "You chose death, %player%.",
-  "You thought you could win, %player%?",
   "Your fate was sealed, %player%.",
   "Technoblade never dies.",
   "Blood for the Blood God!"
-  "Your defeat was predicted.",
-  "You cannot win.",
-  "This was over before it began.",
-  "This is just another Tuesday.",
-  "Skill issue.",
-  "You thought you stood a chance?",
-  "You should have stayed home.",
-  "I am inevitable.",
-  "You made a mistake.",
-  "Not even close"
-  "Technoblade never dies"
-  "GG"
-  
 ];
+
 // ===== RANDOM CHAT =====
 function startRandomChat(bot) {
   if (chatTimeout) clearTimeout(chatTimeout);
@@ -96,8 +74,8 @@ function startRandomChat(bot) {
   loop();
 }
 
-// ===== TRUE ATTACKER DETECTION =====
-function getAttackerFromProjectile(bot) {
+// ===== PROJECTILE OWNER DETECTION =====
+function getProjectileAttacker(bot) {
   const projectile = Object.values(bot.entities).find(e =>
     (e.name === 'arrow' || e.name === 'trident') &&
     e.position.distanceTo(bot.entity.position) < 3
@@ -105,21 +83,49 @@ function getAttackerFromProjectile(bot) {
 
   if (!projectile) return null;
 
-  // owner tracking (works in newer versions)
   if (projectile.metadata && projectile.metadata[7]) {
-    const ownerId = projectile.metadata[7];
-    return bot.entities[ownerId];
+    return bot.entities[projectile.metadata[7]];
   }
 
   return null;
 }
 
+// ===== MELEE DETECTION =====
 function getMeleeAttacker(bot) {
   return bot.nearestEntity(e =>
     e.type === 'player' &&
     e.username !== bot.username &&
     e.position.distanceTo(bot.entity.position) < 4
   );
+}
+
+// ===== COUNTDOWN SYSTEM =====
+function startExecution(bot, target) {
+  if (activeExecution) return;
+  activeExecution = true;
+
+  const line = attackLines[
+    Math.floor(Math.random() * attackLines.length)
+  ].replace("%player%", target.username);
+
+  bot.chat(line);
+
+  let timeLeft = 10;
+
+  const countdown = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+
+      bot.chat(`/kill ${target.username}`);
+      activeExecution = false;
+      return;
+    }
+
+    // GLOBAL ANNOUNCEMENT STYLE
+    bot.chat(`§c⚠ ${target.username} dies in ${timeLeft}...`);
+
+    timeLeft--;
+  }, 1000);
 }
 
 // ===== START BOT =====
@@ -142,34 +148,26 @@ function startBot() {
     startRandomChat(bot);
   });
 
-  // ===== DAMAGE EVENT =====
+  // ===== DAMAGE DETECTION =====
   bot.on('entityHurt', (entity) => {
     if (!bot.entity || entity.id !== bot.entity.id) return;
 
     const now = Date.now();
-    if (now - lastAttackTime < 1500) return;
+    if (now - lastAttackTime < 2000) return;
     lastAttackTime = now;
 
     let attacker =
-      getAttackerFromProjectile(bot) ||
+      getProjectileAttacker(bot) ||
       getMeleeAttacker(bot);
 
     if (!attacker) {
-      console.log("⚠️ Attacker unknown");
+      console.log("⚠️ Attacker not found");
       return;
     }
 
     console.log(`⚔️ Attacked by ${attacker.username}`);
 
-    const line = attackLines[
-      Math.floor(Math.random() * attackLines.length)
-    ].replace("%player%", attacker.username);
-
-    bot.chat(line);
-
-    setTimeout(() => {
-      bot.chat(`/kill ${attacker.username}`);
-    }, 1000);
+    startExecution(bot, attacker);
   });
 
   bot.on('end', () => {
