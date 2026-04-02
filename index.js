@@ -33,6 +33,7 @@ const botArgs = {
 
 let afkInterval = null;
 let chatTimeout = null;
+let lastMessageTime = 0;
 
 // ===== QUOTES =====
 const quotes = [
@@ -46,22 +47,24 @@ const quotes = [
   "The Blade."
 ];
 
-// ===== RANDOM CHAT LOOP =====
+// ===== RANDOM CHAT (ANTI-SPAM SAFE) =====
 function startRandomChat(bot) {
-  if (chatTimeout) {
-    clearTimeout(chatTimeout);
-    chatTimeout = null;
-  }
+  if (chatTimeout) clearTimeout(chatTimeout);
 
   function sendMessage() {
     if (!botStatus.connected) return;
 
+    const now = Date.now();
+    if (now - lastMessageTime < 30000) {
+      chatTimeout = setTimeout(sendMessage, 5000);
+      return;
+    }
+
     const msg = quotes[Math.floor(Math.random() * quotes.length)];
     bot.chat(msg);
+    lastMessageTime = now;
 
-    // Random delay between 30s and 120s
     const delay = Math.floor(Math.random() * (120000 - 30000)) + 30000;
-
     chatTimeout = setTimeout(sendMessage, delay);
   }
 
@@ -81,16 +84,38 @@ function startBot() {
     bot.chat('/skin Technoblade');
     bot.chat('Technoblade never dies.');
 
-    // ===== ANTI-AFK (JUMP ONLY) =====
+    // ===== ANTI-AFK (JUMP) =====
     if (afkInterval) clearInterval(afkInterval);
     afkInterval = setInterval(() => {
       if (!bot.entity) return;
       bot.setControlState('jump', true);
-      setTimeout(() => bot.setControlState('jump', false), 500);
+      setTimeout(() => bot.setControlState('jump', false), 400);
     }, 30000);
 
-    // ===== RANDOM CHAT START =====
+    // ===== RANDOM CHAT =====
     startRandomChat(bot);
+  });
+
+  // ===== RETALIATE WHEN HIT =====
+  bot.on('entityHurt', (entity) => {
+    if (!bot.entity) return;
+
+    if (entity.id === bot.entity.id) {
+      // Find nearest player within 6 blocks
+      const attacker = bot.nearestEntity(e =>
+        e.type === 'player' &&
+        e.username !== bot.username &&
+        e.position.distanceTo(bot.entity.position) < 6
+      );
+
+      if (attacker) {
+        console.log(`⚔️ Attacked by ${attacker.username}`);
+        bot.chat(`YOU DARE STRIKE ME, ${attacker.username}?`);
+        bot.chat(`/kill ${attacker.username}`);
+      } else {
+        console.log("⚠️ Couldn't detect attacker");
+      }
+    }
   });
 
   bot.on('error', (err) => {
