@@ -35,7 +35,7 @@ let afkInterval = null;
 let chatTimeout = null;
 let lastMessageTime = 0;
 
-// ===== QUOTES =====
+// ===== PASSIVE QUOTES =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
@@ -47,7 +47,17 @@ const quotes = [
   "The Blade."
 ];
 
-// ===== RANDOM CHAT (ANTI-SPAM SAFE) =====
+// ===== ATTACK LINES =====
+const attackLines = [
+  "YOU DARE STRIKE ME, %player%?",
+  "You have made a grave mistake, %player%.",
+  "Technoblade never dies.",
+  "Blood for the Blood God!",
+  "I win these.",
+  "Not even close."
+];
+
+// ===== RANDOM CHAT SYSTEM =====
 function startRandomChat(bot) {
   if (chatTimeout) clearTimeout(chatTimeout);
 
@@ -55,6 +65,8 @@ function startRandomChat(bot) {
     if (!botStatus.connected) return;
 
     const now = Date.now();
+
+    // HARD anti-spam (min 30s gap)
     if (now - lastMessageTime < 30000) {
       chatTimeout = setTimeout(sendMessage, 5000);
       return;
@@ -101,19 +113,25 @@ function startBot() {
     if (!bot.entity) return;
 
     if (entity.id === bot.entity.id) {
-      // Find nearest player within 6 blocks
       const attacker = bot.nearestEntity(e =>
         e.type === 'player' &&
         e.username !== bot.username &&
-        e.position.distanceTo(bot.entity.position) < 6
+        e.position.distanceTo(bot.entity.position) < 8
       );
 
       if (attacker) {
         console.log(`⚔️ Attacked by ${attacker.username}`);
-        bot.chat(`YOU DARE STRIKE ME, ${attacker.username}?`);
-        bot.chat(`/kill ${attacker.username}`);
-      } else {
-        console.log("⚠️ Couldn't detect attacker");
+
+        const line = attackLines[
+          Math.floor(Math.random() * attackLines.length)
+        ].replace("%player%", attacker.username);
+
+        bot.chat(line);
+
+        // dramatic delay
+        setTimeout(() => {
+          bot.chat(`/kill ${attacker.username}`);
+        }, 1000);
       }
     }
   });
