@@ -9,13 +9,7 @@ const startTime = Date.now();
 
 app.get('/', (req, res) => {
   botStatus.uptime = Math.floor((Date.now() - startTime) / 1000);
-  res.send(`
-    <body style="background:#111;color:#eee;font-family:sans-serif;text-align:center;padding-top:50px;">
-      <h1>${botStatus.connected ? '🟢 ONLINE' : '🔴 OFFLINE'}</h1>
-      <p>Uptime: ${botStatus.uptime}s | Reconnects: ${botStatus.attempts}</p>
-      <p>Last Error: ${botStatus.lastError}</p>
-    </body>
-  `);
+  res.send(`<h1>${botStatus.connected ? '🟢 ONLINE' : '🔴 OFFLINE'}</h1>`);
 });
 
 app.listen(port, () => console.log(`Web server running on ${port}`));
@@ -34,30 +28,24 @@ const botArgs = {
 let afkInterval = null;
 let chatTimeout = null;
 let lastMessageTime = 0;
+let lastAttackTime = 0;
 
-// ===== PASSIVE QUOTES =====
+// ===== QUOTES =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
-  "Do not reveal your strategies in a YouTube video, you fool!",
   "YOU MORON!",
-  "I win these.",
-  "Not even close.",
-  "The Blade."
-];
-
-// ===== ATTACK LINES =====
-const attackLines = [
-  "YOU DARE STRIKE ME, %player%?",
-  "You have made a grave mistake, %player%.",
-  "Technoblade never dies.",
-  "Blood for the Blood God!",
-  "I win these.",
   "Not even close."
 ];
 
-// ===== RANDOM CHAT SYSTEM =====
+const attackLines = [
+  "YOU DARE STRIKE ME, %player%?",
+  "You have made a grave mistake, %player%.",
+  "Technoblade never dies."
+];
+
+// ===== RANDOM CHAT =====
 function startRandomChat(bot) {
   if (chatTimeout) clearTimeout(chatTimeout);
 
@@ -65,8 +53,6 @@ function startRandomChat(bot) {
     if (!botStatus.connected) return;
 
     const now = Date.now();
-
-    // HARD anti-spam (min 30s gap)
     if (now - lastMessageTime < 30000) {
       chatTimeout = setTimeout(sendMessage, 5000);
       return;
@@ -76,7 +62,7 @@ function startRandomChat(bot) {
     bot.chat(msg);
     lastMessageTime = now;
 
-    const delay = Math.floor(Math.random() * (120000 - 30000)) + 30000;
+    const delay = Math.floor(Math.random() * 90000) + 30000;
     chatTimeout = setTimeout(sendMessage, delay);
   }
 
@@ -85,7 +71,7 @@ function startRandomChat(bot) {
 
 // ===== START BOT =====
 function startBot() {
-  console.log(`[${new Date().toLocaleTimeString()}] Connecting...`);
+  console.log("Connecting...");
 
   const bot = mineflayer.createBot(botArgs);
 
@@ -94,9 +80,8 @@ function startBot() {
     console.log('✅ Bot joined');
 
     bot.chat('/skin Technoblade');
-    bot.chat('Technoblade never dies.');
 
-    // ===== ANTI-AFK (JUMP) =====
+    // Anti AFK
     if (afkInterval) clearInterval(afkInterval);
     afkInterval = setInterval(() => {
       if (!bot.entity) return;
@@ -104,58 +89,59 @@ function startBot() {
       setTimeout(() => bot.setControlState('jump', false), 400);
     }, 30000);
 
-    // ===== RANDOM CHAT =====
     startRandomChat(bot);
   });
 
-  // ===== RETALIATE WHEN HIT =====
+  // ===== RELIABLE ATTACK DETECTION =====
   bot.on('entityHurt', (entity) => {
-    if (!bot.entity) return;
+    if (!bot.entity || entity.id !== bot.entity.id) return;
 
-    if (entity.id === bot.entity.id) {
-      const attacker = bot.nearestEntity(e =>
-        e.type === 'player' &&
-        e.username !== bot.username &&
-        e.position.distanceTo(bot.entity.position) < 8
-      );
+    const now = Date.now();
 
-      if (attacker) {
-        console.log(`⚔️ Attacked by ${attacker.username}`);
+    // prevent spam trigger
+    if (now - lastAttackTime < 2000) return;
+    lastAttackTime = now;
 
-        const line = attackLines[
-          Math.floor(Math.random() * attackLines.length)
-        ].replace("%player%", attacker.username);
+    // find CLOSEST player within 4 blocks (actual hit range)
+    const attacker = bot.nearestEntity(e =>
+      e.type === 'player' &&
+      e.username !== bot.username &&
+      e.position.distanceTo(bot.entity.position) < 4
+    );
 
-        bot.chat(line);
-
-        // dramatic delay
-        setTimeout(() => {
-          bot.chat(`/kill ${attacker.username}`);
-        }, 1000);
-      }
+    if (!attacker) {
+      console.log("⚠️ No attacker found");
+      return;
     }
+
+    console.log(`⚔️ Attacked by ${attacker.username}`);
+
+    const line = attackLines[
+      Math.floor(Math.random() * attackLines.length)
+    ].replace("%player%", attacker.username);
+
+    bot.chat(line);
+
+    setTimeout(() => {
+      bot.chat(`/kill ${attacker.username}`);
+    }, 1000);
   });
 
-  bot.on('error', (err) => {
-    botStatus.lastError = err.message;
-    console.log('❌ Error:', err.message);
-  });
-
-  bot.on('end', (reason) => {
+  bot.on('end', () => {
     botStatus.connected = false;
     botStatus.attempts++;
-    console.log(`🔌 Disconnected: ${reason}`);
 
     if (afkInterval) clearInterval(afkInterval);
     if (chatTimeout) clearTimeout(chatTimeout);
 
     setTimeout(startBot, 30000);
   });
-}
 
-// ===== SAFETY =====
-process.on('uncaughtException', (err) => console.log('💀 Crash:', err));
-process.on('unhandledRejection', (err) => console.log('💀 Promise Crash:', err));
+  bot.on('error', (err) => {
+    botStatus.lastError = err.message;
+    console.log(err);
+  });
+}
 
 // ===== START =====
 startBot();
