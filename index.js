@@ -5,7 +5,11 @@ const port = process.env.PORT || 3000;
 
 // ===== WEB SERVER =====
 let connected = false;
-app.get('/', (req, res) => res.send(connected ? "ONLINE" : "OFFLINE"));
+
+app.get('/', (req, res) => {
+  res.send(connected ? "ONLINE" : "OFFLINE");
+});
+
 app.listen(port);
 
 // ===== BOT CONFIG =====
@@ -20,28 +24,18 @@ const botArgs = {
 let chatRunning = false;
 let executionRunning = false;
 
-// ===== BIG QUOTE POOL =====
+// ===== SAFE QUOTES (NO ILLEGAL CHARACTERS) =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
   "YOU MORON!",
-  "Do not reveal your strategies in a YouTube video, you fool!",
-  "I win these.",
   "Not even close.",
   "The Blade.",
   "You underestimate me.",
-  "You should have stayed quiet.",
-  "This was your mistake.",
-  "You cannot win.",
-  "Skill issue.",
-  "I have already calculated this.",
+  "Your fate is sealed.",
   "This outcome was inevitable.",
-  "You thought you stood a chance?",
-  "This is just another fight.",
-  "You are already defeated.",
-  "I have seen this ending.",
-  "Your defeat was guaranteed."
+  "Skill issue."
 ];
 
 // ===== ATTACK LINES =====
@@ -49,13 +43,10 @@ const attackLines = [
   "YOU DARE STRIKE ME, %target%?",
   "You chose death, %target%.",
   "You made a mistake, %target%.",
-  "Your fate was sealed, %target%.",
-  "You should have run, %target%.",
-  "Technoblade never dies.",
-  "Blood for the Blood God!"
+  "Your fate is sealed, %target%."
 ];
 
-// ===== RANDOM CHAT (NO SPAM) =====
+// ===== CHAT LOOP (NO SPAM STACKING) =====
 function startChat(bot) {
   if (chatRunning) return;
   chatRunning = true;
@@ -73,7 +64,7 @@ function startChat(bot) {
   loop();
 }
 
-// ===== ATTACKER DETECTION (MELEE ONLY = STABLE) =====
+// ===== ATTACKER DETECTION =====
 function getAttacker(bot) {
   if (!bot.entity) return null;
 
@@ -87,16 +78,16 @@ function getAttacker(bot) {
   );
 }
 
-// ===== EXECUTION SYSTEM =====
+// ===== EXECUTION SYSTEM (SAFE) =====
 function execute(bot, target) {
   if (!target || executionRunning) return;
   executionRunning = true;
 
   const name = target.username;
 
-  const line = attackLines[
-    Math.floor(Math.random() * attackLines.length)
-  ].replace("%target%", name);
+  const line =
+    attackLines[Math.floor(Math.random() * attackLines.length)]
+      .replace("%target%", name);
 
   bot.chat(line);
 
@@ -113,7 +104,7 @@ function execute(bot, target) {
       clearInterval(interval);
 
       try {
-        bot.chat(`/kill ${name}`);
+        bot.chat(`/execute as ${name} run kill @s`);
       } catch (e) {
         console.log("Kill error:", e.message);
       }
@@ -122,7 +113,7 @@ function execute(bot, target) {
       return;
     }
 
-    bot.chat(`§c⚠ ${name} dies in ${time}...`);
+    bot.chat(name + " dies in " + time + "...");
     time--;
   }, 1000);
 }
@@ -134,16 +125,17 @@ function startBot() {
   bot.on('spawn', () => {
     connected = true;
 
-    bot.chat('/skin Technoblade');
+    // IMPORTANT: NO /skin COMMAND (FIXED YOUR ISSUE)
 
-    // AFK jump
+    // SAFE chat loop
+    startChat(bot);
+
+    // simple anti-AFK jump
     setInterval(() => {
       if (!bot.entity) return;
       bot.setControlState('jump', true);
       setTimeout(() => bot.setControlState('jump', false), 300);
     }, 30000);
-
-    startChat(bot);
   });
 
   bot.on('entityHurt', (entity) => {
@@ -157,6 +149,10 @@ function startBot() {
     } catch (e) {
       console.log("Attack error:", e.message);
     }
+  });
+
+  bot.on('kicked', (reason) => {
+    console.log("KICKED:", reason);
   });
 
   bot.on('end', () => {
