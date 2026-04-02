@@ -20,9 +20,7 @@ const botArgs = {
   port: 30780,
   username: 'Technoblade',
   auth: 'offline',
-  version: false,
-  connectTimeout: 60000,
-  checkTimeoutInterval: 90000
+  version: false
 };
 
 let afkInterval = null;
@@ -30,58 +28,99 @@ let chatTimeout = null;
 let lastMessageTime = 0;
 let lastAttackTime = 0;
 
-// ===== QUOTES =====
+// ===== QUOTES (BIG LIST) =====
 const quotes = [
   "Technoblade never dies.",
   "Blood for the Blood God!",
   "One of us.",
   "YOU MORON!",
-  "Not even close."
+  "Do not reveal your strategies in a YouTube video, you fool!",
+  "I win these.",
+  "Not even close.",
+  "The Blade.",
+  "You underestimate me.",
+  "I have calculated your defeat.",
+  "This is just another Tuesday.",
+  "Skill issue.",
+  "You thought you stood a chance?",
+  "You should have stayed home.",
+  "I am inevitable.",
+  "You made a mistake.",
+  "This is where you lose.",
+  "I have seen this outcome already.",
+  "Your defeat was predicted.",
+  "You cannot win.",
+  "This was over before it began."
 ];
 
+// ===== ATTACK LINES =====
 const attackLines = [
   "YOU DARE STRIKE ME, %player%?",
   "You have made a grave mistake, %player%.",
-  "Technoblade never dies."
+  "You chose death, %player%.",
+  "You thought you could win, %player%?",
+  "Your fate was sealed, %player%.",
+  "Technoblade never dies.",
+  "Blood for the Blood God!"
 ];
 
 // ===== RANDOM CHAT =====
 function startRandomChat(bot) {
   if (chatTimeout) clearTimeout(chatTimeout);
 
-  function sendMessage() {
+  function loop() {
     if (!botStatus.connected) return;
 
     const now = Date.now();
-    if (now - lastMessageTime < 30000) {
-      chatTimeout = setTimeout(sendMessage, 5000);
-      return;
+    if (now - lastMessageTime >= 30000) {
+      const msg = quotes[Math.floor(Math.random() * quotes.length)];
+      bot.chat(msg);
+      lastMessageTime = now;
     }
 
-    const msg = quotes[Math.floor(Math.random() * quotes.length)];
-    bot.chat(msg);
-    lastMessageTime = now;
-
     const delay = Math.floor(Math.random() * 90000) + 30000;
-    chatTimeout = setTimeout(sendMessage, delay);
+    chatTimeout = setTimeout(loop, delay);
   }
 
-  sendMessage();
+  loop();
+}
+
+// ===== TRUE ATTACKER DETECTION =====
+function getAttackerFromProjectile(bot) {
+  const projectile = Object.values(bot.entities).find(e =>
+    (e.name === 'arrow' || e.name === 'trident') &&
+    e.position.distanceTo(bot.entity.position) < 3
+  );
+
+  if (!projectile) return null;
+
+  // owner tracking (works in newer versions)
+  if (projectile.metadata && projectile.metadata[7]) {
+    const ownerId = projectile.metadata[7];
+    return bot.entities[ownerId];
+  }
+
+  return null;
+}
+
+function getMeleeAttacker(bot) {
+  return bot.nearestEntity(e =>
+    e.type === 'player' &&
+    e.username !== bot.username &&
+    e.position.distanceTo(bot.entity.position) < 4
+  );
 }
 
 // ===== START BOT =====
 function startBot() {
-  console.log("Connecting...");
-
   const bot = mineflayer.createBot(botArgs);
 
   bot.on('spawn', () => {
     botStatus.connected = true;
-    console.log('✅ Bot joined');
 
     bot.chat('/skin Technoblade');
 
-    // Anti AFK
+    // AFK jump
     if (afkInterval) clearInterval(afkInterval);
     afkInterval = setInterval(() => {
       if (!bot.entity) return;
@@ -92,25 +131,20 @@ function startBot() {
     startRandomChat(bot);
   });
 
-  // ===== RELIABLE ATTACK DETECTION =====
+  // ===== DAMAGE EVENT =====
   bot.on('entityHurt', (entity) => {
     if (!bot.entity || entity.id !== bot.entity.id) return;
 
     const now = Date.now();
-
-    // prevent spam trigger
-    if (now - lastAttackTime < 2000) return;
+    if (now - lastAttackTime < 1500) return;
     lastAttackTime = now;
 
-    // find CLOSEST player within 4 blocks (actual hit range)
-    const attacker = bot.nearestEntity(e =>
-      e.type === 'player' &&
-      e.username !== bot.username &&
-      e.position.distanceTo(bot.entity.position) < 4
-    );
+    let attacker =
+      getAttackerFromProjectile(bot) ||
+      getMeleeAttacker(bot);
 
     if (!attacker) {
-      console.log("⚠️ No attacker found");
+      console.log("⚠️ Attacker unknown");
       return;
     }
 
@@ -143,5 +177,4 @@ function startBot() {
   });
 }
 
-// ===== START =====
 startBot();
