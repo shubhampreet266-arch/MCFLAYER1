@@ -24,9 +24,9 @@ app.listen(port, () => console.log(`Web server live on port ${port}`));
 
 // 2. THE BOT CONFIG
 const botArgs = {
-  host: 'lamprey.aternos.host', 
+  host: 'Pixelcraft-kgp9.aternos.me', 
   port: 30780,                  
-  username: 'PixelCraftBot',
+  username: 'Technoblade',
   auth: 'offline',
   version: '1.21.1',
   skipValidation: true,
@@ -43,8 +43,8 @@ function startBot() {
 
   bot.on('spawn', () => {
     botStatus.connected = true;
-    console.log('✅ Bot Joined! Switching to spectator...');
-    bot.chat('/gamemode spectator');
+    console.log('✅ Bot Joined!');
+    bot.chat('/skin Technoblade');
     
     // Anti-AFK: Look around every 30s so Aternos doesn't kick for idling
     setInterval(() => {
