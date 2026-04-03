@@ -24,6 +24,9 @@ const botArgs = {
 let chatRunning = false;
 let executionRunning = false;
 
+let chatTimeout = null;
+let execTimeout = null;
+
 // ===== QUOTES =====
 const quotes = [
  "Technoblade never dies.",
@@ -57,11 +60,14 @@ function startChat(bot) {
   chatRunning = true;
 
   function loop() {
-    if (!connected) return;
+    if (!connected || !bot.entity) {
+      chatRunning = false;
+      return;
+    }
 
     bot.chat(quotes[Math.floor(Math.random() * quotes.length)]);
 
-    setTimeout(loop, Math.random() * 90000 + 30000);
+    chatTimeout = setTimeout(loop, Math.random() * 90000 + 30000);
   }
 
   loop();
@@ -75,8 +81,8 @@ function getAttacker(bot) {
     e &&
     e.type === 'player' &&
     e.username !== bot.username &&
-    bot.entity.position &&
     e.position &&
+    bot.entity.position &&
     e.position.distanceTo(bot.entity.position) < 5
   );
 }
@@ -88,8 +94,10 @@ function execute(bot, target) {
   executionRunning = true;
 
   const name = target.username;
-  const line = attackLines[Math.floor(Math.random() * attackLines.length)]
-    .replace("%target%", name);
+
+  const line =
+    attackLines[Math.floor(Math.random() * attackLines.length)]
+      .replace("%target%", name);
 
   bot.chat(line);
 
@@ -105,7 +113,6 @@ function execute(bot, target) {
     if (time <= 0) {
       clearInterval(interval);
 
-      // SAFE fallback kill (works on most servers ONLY if OP)
       bot.chat(`/kill ${name}`);
 
       executionRunning = false;
@@ -116,8 +123,10 @@ function execute(bot, target) {
     time--;
   }, 1000);
 
-  // safety unlock (prevents permanent lock)
-  setTimeout(() => executionRunning = false, 20000);
+  // HARD SAFETY RESET (prevents permanent lock)
+  execTimeout = setTimeout(() => {
+    executionRunning = false;
+  }, 15000);
 }
 
 // ===== BOT =====
@@ -129,9 +138,12 @@ function startBot() {
   bot.on('spawn', () => {
     connected = true;
 
+    // reset states properly
+    chatRunning = false;
+    executionRunning = false;
+
     startChat(bot);
 
-    // FIXED jump loop (no stacking)
     if (jumpLoop) clearInterval(jumpLoop);
 
     jumpLoop = setInterval(() => {
@@ -150,8 +162,12 @@ function startBot() {
 
   bot.on('end', () => {
     connected = false;
+
     chatRunning = false;
     executionRunning = false;
+
+    if (chatTimeout) clearTimeout(chatTimeout);
+    if (execTimeout) clearTimeout(execTimeout);
 
     setTimeout(startBot, 30000);
   });
