@@ -17,7 +17,7 @@ app.listen(port);
 
 // ===== BOT CONFIG =====
 const botArgs = {
-  host: 'Pixelcraft-kgp9.aternos.me',
+  host: 'delhi-4843.indernos.in',
   port: 30780,
   username: 'Technoblade',
   auth: 'offline',
