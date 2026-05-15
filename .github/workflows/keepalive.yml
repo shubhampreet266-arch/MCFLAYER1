@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Send Real Browser Ping to Hugging Face
         run: |
-          curl -sL https://huggingface.co > /dev/null
+          curl -sL huggingface.co/spaces/stormstriker/Technoblade/> /dev/null
           echo "Successfully checked in on Technoblade! Space timer reset."
