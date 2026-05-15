@@ -22,7 +22,7 @@ app.listen(port);
 // ===== BOT CONFIG =====
 const botArgs = {
   host: 'delhi-4843.indernos.in',
-  port: 30780,
+  port: 25565,
   username: 'Technoblade',
   auth: 'offline',
   version: false
