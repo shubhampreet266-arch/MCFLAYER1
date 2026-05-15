@@ -1,0 +1,16 @@
+name: Keep Technoblade Alive
+
+on:
+  schedule:
+    # This automatically runs every single day at 12:00 AM UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # This adds a manual button so you can test it right now
+
+jobs:
+  ping-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Real Browser Ping to Hugging Face
+        run: |
+          curl -sL https://huggingface.co > /dev/null
+          echo "Successfully checked in on Technoblade! Space timer reset."
